@@ -37,42 +37,62 @@ let rec mainLoop (pullFrom: string list) (pushTo: string list) : string list =
     | x::rest ->
         examine rest pushTo x
 
-and examine (pullFrom: string list) (pushTo: string list) (toExamine: string) =
+and examine (pullFrom: string list) (pushTo: string list) (toExamine: string) : string list =
     if toExamine.Contains(' ') then
         prepare pullFrom pushTo toExamine
     else
         // no space, drop it
         mainLoop pullFrom pushTo
 
-and prepare pullFrom pushTo toExamine =
-    let examine::remainingChars =
-        toExamine.ToCharArray()
-        |> Array.toList
+and prepare pullFrom pushTo toExamine : string list =
+    //let examine::remainingChars =
+    //    toExamine.ToCharArray()
+    //    |> Array.toList
 
-    let compareItem::compareRemainingStrings = pushTo
-
-    let compareChar::compareRemainingChars =
-        compareItem.ToCharArray()
-        |> Array.toList
-        
-    compare {
-        pullFrom = pullFrom
-        pushTo = pushTo
-        examining = {
-            remaining = remainingChars
-            item = examine
-        }
-        comparing = {
-            remainingStrings = compareRemainingStrings
-            examining = {
+    //let getCompareExam (compareItem : string) : Examining =
+    let (| Examine | Next |) (compareItem : string) =
+        match compareItem.ToCharArray() |> Array.toList with
+        | compareChar::compareRemainingChars ->
+            Examine({
                 remaining = compareRemainingChars
                 item = compareChar
-            }
-            spaceFound = false
-        }
-    }
+            })
+        | [] ->
+            Next
 
-and compare (state: CompareState) =
+    let (| Compare | Done |) (getComparing : string) (pushTo : string list) =
+        match pushTo with
+        | compareItem::compareRemainingStrings ->
+            match compareItem with
+            | Examine(ci) ->
+                {
+                    remainingStrings = compareRemainingStrings
+                    examining = ci
+                    spaceFound = false
+                }
+            | Next ->
+
+        | [] -> // 
+
+    match toExamine.ToCharArray() |> Array.toList with
+    | c::cs ->
+        
+         //remainingChars toExamine
+        {
+            pullFrom = pullFrom
+            pushTo = pushTo
+            examining = {
+                remaining = cs
+                item = c
+            }
+            comparing = getComparing pushTo
+        }
+        |> compare
+    | [] ->
+        mainLoop pullFrom (toExamine::pushTo)
+        
+
+and compare (state: CompareState) : string list =
     
 
 let doThingsAndStuff (lst: string list): string list =
