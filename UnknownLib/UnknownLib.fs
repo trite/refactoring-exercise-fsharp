@@ -17,6 +17,7 @@ type Examining =
 
 type Comparing =
     {
+        previousStrings: string list
         remainingStrings: string list
         examining: Examining
         spaceFound: bool
@@ -60,39 +61,52 @@ and prepare pullFrom pushTo toExamine : string list =
         | [] ->
             Next
 
-    let (| Compare | Done |) (getComparing : string) (pushTo : string list) =
-        match pushTo with
-        | compareItem::compareRemainingStrings ->
-            match compareItem with
-            | Examine(ci) ->
-                {
-                    remainingStrings = compareRemainingStrings
-                    examining = ci
-                    spaceFound = false
-                }
-            | Next ->
+    let (| Compare | Done |) (pushTo : string list) =
+        let rec getNextCompare pushTo =
+            match pushTo with
+            | compareItem::compareRemainingStrings ->
+                match compareItem with
+                | Examine(ci) ->
+                    Compare({
+                        previousStrings = []
+                        remainingStrings = compareRemainingStrings
+                        examining = ci
+                        spaceFound = false
+                    })
+                | Next ->
+                    getNextCompare compareRemainingStrings
+            | [] ->
+                Done
 
-        | [] -> // 
+        getNextCompare pushTo
 
     match toExamine.ToCharArray() |> Array.toList with
     | c::cs ->
-        
-         //remainingChars toExamine
-        {
-            pullFrom = pullFrom
-            pushTo = pushTo
-            examining = {
-                remaining = cs
-                item = c
+        match pushTo with
+        | Compare(comparing) ->
+            {
+                pullFrom = pullFrom
+                pushTo = pushTo
+                examining = {
+                    remaining = cs
+                    item = c
+                }
+                comparing = comparing
             }
-            comparing = getComparing pushTo
-        }
-        |> compare
+            |> compare
+        | Done ->
+            let newPushTo =
+                if pushTo |> List.contains toExamine then
+                    pushTo
+                else
+                    toExamine::pushTo
+
+            mainLoop pullFrom newPushTo
     | [] ->
         mainLoop pullFrom (toExamine::pushTo)
-        
 
 and compare (state: CompareState) : string list =
+
     
 
 let doThingsAndStuff (lst: string list): string list =
