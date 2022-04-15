@@ -11,6 +11,7 @@
 
 type Examining =
     {
+        original: string
         remaining: char list
         item: char
     }
@@ -32,6 +33,7 @@ type CompareState =
     }
 
 let rec mainLoop (pullFrom: string list) (pushTo: string list) : string list =
+    printfn "pullFrom: %A\npushTo: %A" pullFrom pushTo
     match pullFrom with
     | [] ->
         pushTo |> List.rev
@@ -53,32 +55,33 @@ and prepare pullFrom pushTo toExamine : string list =
     //let getCompareExam (compareItem : string) : Examining =
     let (| Examine | Next |) (compareItem : string) =
         match compareItem.ToCharArray() |> Array.toList with
+        | [] ->
+            Next
         | compareChar::compareRemainingChars ->
             Examine({
+                original = compareItem
                 remaining = compareRemainingChars
                 item = compareChar
             })
-        | [] ->
-            Next
 
     let (| Compare | Done |) (pushTo : string list) =
-        let rec getNextCompare pushTo =
+        let rec getNextCompare pushTo acc =
             match pushTo with
+            | [] ->
+                Done
             | compareItem::compareRemainingStrings ->
                 match compareItem with
+                | Next ->
+                    getNextCompare compareRemainingStrings (compareItem::acc)
                 | Examine(ci) ->
                     Compare({
-                        previousStrings = []
+                        previousStrings = acc
                         remainingStrings = compareRemainingStrings
                         examining = ci
                         spaceFound = false
                     })
-                | Next ->
-                    getNextCompare compareRemainingStrings
-            | [] ->
-                Done
 
-        getNextCompare pushTo
+        getNextCompare pushTo []
 
     match toExamine.ToCharArray() |> Array.toList with
     | c::cs ->
@@ -88,6 +91,7 @@ and prepare pullFrom pushTo toExamine : string list =
                 pullFrom = pullFrom
                 pushTo = pushTo
                 examining = {
+                    original = toExamine
                     remaining = cs
                     item = c
                 }
@@ -107,7 +111,59 @@ and prepare pullFrom pushTo toExamine : string list =
 
 and compare (state: CompareState) : string list =
 
-    
+    let backToMain (state: CompareState) =
+        let newPushTo =
+            List.append
+                state.comparing.remainingStrings
+                (state.examining.original::state.comparing.previousStrings)
+
+        mainLoop state.pullFrom newPushTo
+
+    //if (not state.comparing.spaceFound) ||
+    //    (state.examining.item < state.comparing.examining.item) then
+    if (not state.comparing.spaceFound) && state.comparing.examining.item = ' ' then
+        compare {
+            state with
+                comparing = {
+                    state.comparing with
+                        spaceFound = true
+                }
+        }
+    else
+        if state.examining.item < state.comparing.examining.item then
+            backToMain state
+        else if state.examining.item = state.comparing.examining.item then
+            match state.examining.remaining with
+            | e::es ->
+                match state.comparing.examining.remaining with
+                | c::cs ->
+                    compare {
+                        state with
+                            examining = {
+                                state.examining with
+                                    remaining = es
+                                    item = e
+                            }
+                            comparing = {
+                                state.comparing with
+                                    examining = {
+                                        state.comparing.examining with
+                                            remaining = cs
+                                            item = c
+                                    }
+                            }
+                    }
+                | [] -> backToMain state
+            | [] -> backToMain state
+
+        else
+            let newPushTo =
+                if state.pushTo |> List.contains state.examining.original then
+                    state.pushTo
+                else
+                    state.examining.original::state.pushTo
+
+            mainLoop state.pullFrom newPushTo
 
 let doThingsAndStuff (lst: string list): string list =
     mainLoop lst []
