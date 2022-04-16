@@ -82,5 +82,32 @@ let filterSpaceAndSort = (arr: array<string>): array<string> => {
 ## Attempting to recreate the actual behavior
 This is very subtle behavior to try and recreate. Unit tests are going to be critical to getting quick feedback while testing out code changes during prototyping.
 
+## ReasonML/ReScript attempt
 The first attempt was done with ReScript (previously BuckleScript, to compile ReasonML to JavaScript). The repo is here: https://github.com/trite/refactoring-exercise
 
+There are notes in https://github.com/trite/refactoring-exercise/blob/main/experimenting.js that I wrote while attempting to get a feel for what was going on.
+
+Started by outlining sections likely to be grouped together:
+
+![first outline](img/outline01.png)
+
+These were simply "s" and a number, and ended up being the basis for the different `state1`/`state2`/`state3` types in the Reason code (still wasn't sure which naming made the most sense, hence the useless names still).
+
+Felt pretty comfortable getting started with Reason/Rescript, but was spending too much time researching language features to figure out what tools were available. Thus the F# project was started. In the end this solution came closer to properly solving the issue by the time I needed to stop on the code and start on this writeup.
+
+Filtering worked great in this version, results that failed were due to ordering, not the right elements being present.
+
+![rescript tests](img/rescript-tests.png)
+
+![rescript example failure](img/rescript-test-example-fail.png)
+
+## FSharp attempt
+Wanted to see if switching to a language that is more familiar might help, thus this repo was born: https://github.com/trite/refactoring-exercise-fsharp
+
+This attempt got a slightly looser breakdown but better names:
+
+![second outline](img/outline02.png)
+
+Decided to try being a bit less verbose with my states this time, but it may have backfired a bit. 
+
+![fsharp tests](img/fsharp-tests.png)
