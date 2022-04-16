@@ -1,14 +1,13 @@
 ﻿module UnknownLib
 
-//let hello (name: string): string =
-//    $"Hello {name}"
- 
+// If filter/sort was sufficient to solve the task this would do it:
 //let doThingsAndStuff (lst: string list): string list =
 //    lst
 //    |> List.filter (fun s -> s.Contains(' '))
 //    |> List.sort
 //    |> List.rev
 
+// Used to walk through a string
 type Examining =
     {
         original: string
@@ -16,6 +15,8 @@ type Examining =
         item: char
     }
 
+// Used to walk through an array of strings for figuring
+// out where to insert in case an insert is needed
 type Comparing =
     {
         previousStrings: string list
@@ -24,6 +25,7 @@ type Comparing =
         spaceFound: bool
     }
 
+// Might be better not to group this info, wanted to get things working first
 type CompareState =
     {
         pullFrom: string list
@@ -32,8 +34,11 @@ type CompareState =
         comparing: Comparing
     }
 
+// Main loop
+// roughly equivalent to: while(x.length)
+// "base" in ../img/outline02.png
 let rec mainLoop (pullFrom: string list) (pushTo: string list) : string list =
-    //printfn "pullFrom: %A\npushTo: %A" pullFrom pushTo
+    // attempt to pop the head off the list
     match pullFrom with
     | [] ->
         // no more items to scan
@@ -42,6 +47,9 @@ let rec mainLoop (pullFrom: string list) (pushTo: string list) : string list =
         // examine the head of the list
         examine rest pushTo x
 
+// Examination
+// roughly: for (tmep3 = 0; tmep3 < temp2.length; tmep3++)
+// "exam" in ../img/outline02.png
 and examine (pullFrom: string list) (pushTo: string list) (toExamine: string) : string list =
     if toExamine.Contains(' ') then
         // prepare to compare things
@@ -50,6 +58,9 @@ and examine (pullFrom: string list) (pushTo: string list) (toExamine: string) : 
         // no space, drop it and continue on
         mainLoop pullFrom pushTo
 
+// Preparation
+// roughly: for (temp4 = 0; temp4 < temp.length; temp4++)
+// "prepare" in ../img/outline02.png
 and prepare pullFrom pushTo toExamine : string list =
     // Active pattern as an easy way to return finite amounts of
     // possible states without defining a 1-off type declaration
@@ -119,6 +130,9 @@ and prepare pullFrom pushTo toExamine : string list =
         // this branch can only happen if a space was already found, add to head of list
         mainLoop pullFrom (toExamine::pushTo)
 
+// Comparing 2 items to determine where to insert the main element being examined
+// roughly: for (var y = 0; y < temp[temp4].length; y++)
+// "compare" in ../img/outline02.png
 and compare (state: CompareState) : string list =
     let backToMain (state: CompareState) =
         // before returning to main we need to insert the current item between both halves of `pushTo`
@@ -129,10 +143,19 @@ and compare (state: CompareState) : string list =
 
         mainLoop state.pullFrom newPushTo
 
+    // TODO: This all got out of hand and has lots of room for improvement
     if (not state.comparing.spaceFound) && state.comparing.examining.item = ' ' then
+        // Repeated nearly identically below, huge potential for refactoring
+        // if this works as intended (not sure yet)
         match state.examining.remaining with
+        | [] ->
+            backToMain state
         | e::es ->
             match state.comparing.examining.remaining with
+            | [] ->
+                let newPushTo = state.examining.original::state.pushTo
+                let newToExamine::newPullFrom = state.pullFrom
+                prepare newPullFrom newPushTo newToExamine
             | c::cs ->
                 compare {
                     state with
@@ -151,28 +174,19 @@ and compare (state: CompareState) : string list =
                                 }
                         }
                 }
-            | [] ->
-                // think I need to do the splice here before calling prepare?
-                prepare state.pullFrom state.pushTo state.examining.original
-        | [] ->
-            // not sure on this one just yet
-                
-            
-        //compare {
-        //    state with
-        //        comparing = {
-        //            state.comparing with
-        //                spaceFound = true
-        //        }
-        //}
     else
         if state.examining.item < state.comparing.examining.item then
             backToMain state
         else if state.examining.item = state.comparing.examining.item then
 
             match state.examining.remaining with
+            | [] ->
+                match state.pushTo with
+                | item::rest -> prepare state.pullFrom rest item
+                | [] -> backToMain state
             | e::es ->
                 match state.comparing.examining.remaining with
+                | [] -> backToMain state
                 | c::cs ->
                     compare {
                         state with
@@ -190,12 +204,6 @@ and compare (state: CompareState) : string list =
                                     }
                             }
                     }
-                | [] -> backToMain state
-            //| [] -> backToMain state
-            | [] ->
-                match state.pushTo with
-                | item::rest -> prepare state.pullFrom rest item
-                | [] -> backToMain state
         else
             let newPushTo =
                 if state.pushTo |> List.contains state.examining.original then
@@ -205,5 +213,6 @@ and compare (state: CompareState) : string list =
 
             mainLoop state.pullFrom newPushTo
 
+// invoke the main loop with an empty accumulator
 let doThingsAndStuff (lst: string list): string list =
     mainLoop lst []

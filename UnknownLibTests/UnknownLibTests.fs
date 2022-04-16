@@ -5,11 +5,8 @@ open FsUnit
 
 open UnknownLib
 
-//[<Test>]
-//let ``sanity check test`` () =
-//    hello "foo" |> should equal "Hello foo"
-
-
+// These tests are using results from the original javascript doThingsAndStuff
+// Effectively translated from the ReasonML version of the code attempt
 
 [<Test>]
 let ``single space string`` () =
